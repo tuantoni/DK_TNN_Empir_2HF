@@ -11,6 +11,7 @@ library(dplyr)
 library(ggplot2)
 library(ggpubr)
 library(mev)
+library(stats)
 
 #adat letoltes yahoo-rol, es adj close kimentese
 tesla_df <-
@@ -34,27 +35,53 @@ n<-length(tesla_df$loss) #vesztesegek szama
 
 gpd_df<-data.frame(k=index(tesla_df$loss),Loss=sort(tesla_df$loss, decreasing=TRUE))
 gpd_df<-cbind(gpd_df, y=gpd_df$Loss-u)
-gpd_df_v2<-data.frame(k=index(gpd_df$y[gpd_df$y>0]),y=gpd_df$y[gpd_df$y>0])
-gpd_df_v2<-gpd_df_v2[,2]
-Nu<-length(gpd_df_v2) #küszöböt meghaladó veszteségek száma
+gpd_df_v2<-data.frame(k=index(gpd_df$y[gpd_df$y>0]),y=gpd_df$y[gpd_df$y>0], loss=gpd_df$Loss[gpd_df$y>0])
+gpd_df_v3<-gpd_df_v2[,2]
+Nu<-length(gpd_df_v3) #küszöböt meghaladó veszteségek száma
 
-par_s<-gpd.mle(gpd_df_v2,args = c("scale", "shape"))
+par_s<-gpd.mle(gpd_df_v3,args = c("scale", "shape"))
 beta<-par_s[1]
 xi<-par_s[2]
 
-setNames(beta,NULL)
-setNames(xi,NULL)
+beta<-setNames(beta,NULL)
+xi<-setNames(xi,NULL)
 
 #szignifikanciaszint(ek)
 q<-0.99
 q1<-0.95
 
 #EVT alapu becsles
-VaR<-u+(beta/xi)*(((n/Nu)*(1-q))^(-xi)-1)
-CVaR<-VaR/(1-xi)+(beta-xi*u)/(1-xi)
+VaR99<-u+(beta/xi)*(((n/Nu)*(1-q))^(-xi)-1)
+CVaR99<-VaR99/(1-xi)+(beta-xi*u)/(1-xi)
+
+VaR95<-u+(beta/xi)*(((n/Nu)*(1-q1))^(-xi)-1)
+CVaR95<-VaR95/(1-xi)+(beta-xi*u)/(1-xi)
 
 
 #historikus becsles
 n_hist<-n*(1-q)
-VaR_hist<-nth(gpd_df$Loss,n_hist)
-CVaR_hist<-mean(gpd_df$Loss[1:n_hist])
+VaR_hist99<-nth(gpd_df$Loss,n_hist)
+CVaR_hist99<-mean(gpd_df$Loss[1:n_hist])
+
+
+n_hist<-n*(1-q1)
+VaR_hist95<-nth(gpd_df$Loss,n_hist)
+CVaR_hist95<-mean(gpd_df$Loss[1:n_hist])
+
+
+#lnL
+gpd_df_v2<-cbind(gpd_df_v2, lnL=-log(beta)-(1+1/xi)*log(1+xi/beta*gpd_df_v2$y))
+sumlnL<-sum(gpd_df_v2$lnL)
+
+
+ggplot(gpd_df_v2, aes(x=k, y=lnL))+
+  geom_line()+
+  labs(title="Tesla GPD distribution")
+
+ggplot(mapping = aes(sample=gpd_df_v2$lnL))+
+  geom_qq() + geom_qq_line(color=2)+labs(title="Normal Q-Q Plot")
+
+#illeszkedés jósága
+AIC(gpd_df_v2$lnL)
+
+
