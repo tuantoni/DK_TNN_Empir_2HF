@@ -81,7 +81,21 @@ ggplot(gpd_df_v2, aes(x=k, y=lnL))+
 ggplot(mapping = aes(sample=gpd_df_v2$lnL))+
   geom_qq() + geom_qq_line(color=2)+labs(title="Normal Q-Q Plot")
 
-#illeszkedés jósága
-AIC(gpd_df_v2$lnL)
 
+#Hill becsles (nem a házi része)
+A<-gpd_df_v2[length(gpd_df_v2$loss),3]
+gpd_dfH<-data.frame(k=index(tesla_df$loss),Loss=sort(tesla_df$loss, decreasing=TRUE))
+gpd_dfH<-cbind(gpd_dfH, y=gpd_dfH$Loss-A)
+gpd_dfH_v2<-data.frame(k=index(gpd_dfH$y[gpd_dfH$y>0]),y=gpd_dfH$y[gpd_dfH$y>0], loss=gpd_dfH$Loss[gpd_dfH$y>0])
+gpd_dfH_v2<-cbind(gpd_dfH_v2, lnL=log(gpd_dfH_v2$loss/A))
+sumlnL_Hill<-sum(gpd_dfH_v2$lnL)
+μ<-length(gpd_dfH_v2$lnL)/sumlnL_Hill
+xi_Hill<-1/μ
+beta_Hill<-mean(gpd_dfH_v2$y[1:(length(gpd_dfH_v2$y)-1)])*(1-xi_Hill)
+VaR_Hill99<-u+(beta_Hill/xi_Hill)*((n/Nu*(1-q))^(-xi_Hill)-1)
+VaR_Hill95<-u+(beta_Hill/xi_Hill)*((n/Nu*(1-q1))^(-xi_Hill)-1)
+
+ggplot(gpd_dfH_v2, aes(x=k, y=lnL))+
+  geom_line()+
+  labs(title="Tesla GPD distribution with Hill estimation")
 
