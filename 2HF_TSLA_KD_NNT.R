@@ -47,7 +47,7 @@ gpdfit$converged # ha 0 a value akkor ML használva lett
 par_s<-gpdfit$par.ests #alakparaméter és skálaparaméter
 gpdfit$par.ses #sztenderd hiba
 
-plot(gpdfit) #gpd cdf
+# plot(gpdfit) #gpd cdf
 
 tp<-tailplot(gpdfit)
 gpd.q(tp, pp=0.999, ci.p =0.95)
@@ -55,26 +55,27 @@ quantile(tesla_df$loss[tesla_df$loss>0], probs = 0.999, type =1)
 
 gpd.sfall(tp, 0.99)
 
+#szignifikanciaszint(ek)
+q<-0.99
+q1<-0.95
 
 u<-0.03 #küszöb
 n<-length(tesla_df$loss) #vesztesegek szama
-# 
+n_hist99<-n*(1-q)
+n_hist95<-n*(1-q1)
+
 gpd_df<-data.frame(k=index(tesla_df$loss),Loss=sort(tesla_df$loss, decreasing=TRUE))
 gpd_df<-cbind(gpd_df, y=gpd_df$Loss-u)
 gpd_df_v2<-data.frame(k=index(gpd_df$y[gpd_df$y>0]),y=gpd_df$y[gpd_df$y>0], loss=gpd_df$Loss[gpd_df$y>0])
 gpd_df_v3<-gpd_df_v2[,2]
 Nu<-length(gpd_df_v3) #küszöböt meghaladó veszteségek száma
 
-beta<-par_s[1]
-xi<-par_s[2]
+beta<-par_s[2]
+xi<-par_s[1]
 
 beta<-setNames(beta,NULL)
 xi<-setNames(xi,NULL)
-# 
-#szignifikanciaszint(ek)
-q<-0.99
-q1<-0.95
-# 
+
 #EVT alapu becsles
 VaR99<-u+(beta/xi)*(((n/Nu)*(1-q))^(-xi)-1)
 CVaR99<-VaR99/(1-xi)+(beta-xi*u)/(1-xi)
@@ -84,13 +85,13 @@ CVaR95<-VaR95/(1-xi)+(beta-xi*u)/(1-xi)
 
 
 #historikus becsles
-n_hist<-n*(1-q)
-VaR_hist99<-nth(gpd_df$Loss,n_hist)
-CVaR_hist99<-mean(gpd_df$Loss[1:n_hist])
+
+VaR_hist99<-nth(gpd_df$Loss,n_hist99)
+CVaR_hist99<-mean(gpd_df$Loss[1:n_hist99])
 
 Fx<-1-(Nu/n)*(1+xi*(gpd_df_v2$y/beta))^(-1/xi)
 
 n_hist<-n*(1-q1)
-VaR_hist95<-nth(gpd_df$Loss,n_hist)
-CVaR_hist95<-mean(gpd_df$Loss[1:n_hist])
+VaR_hist95<-nth(gpd_df$Loss,n_hist95)
+CVaR_hist95<-mean(gpd_df$Loss[1:n_hist95])
 
