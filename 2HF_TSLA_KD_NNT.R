@@ -64,6 +64,9 @@ VaR_hist99<-nth(gpd_df$Loss,n_hist)
 CVaR_hist99<-mean(gpd_df$Loss[1:n_hist])
 
 
+Fx<-1-(Nu/n)*(1+xi*(gpd_df_v2$y/beta))^(-1/xi)
+
+
 n_hist<-n*(1-q1)
 VaR_hist95<-nth(gpd_df$Loss,n_hist)
 CVaR_hist95<-mean(gpd_df$Loss[1:n_hist])
@@ -73,13 +76,19 @@ CVaR_hist95<-mean(gpd_df$Loss[1:n_hist])
 gpd_df_v2<-cbind(gpd_df_v2, lnL=-log(beta)-(1+1/xi)*log(1+xi/beta*gpd_df_v2$y))
 sumlnL<-sum(gpd_df_v2$lnL)
 
+Fx<-1-(Nu/n)*(1+xi*(gpd_df_v2$y/beta))^(-1/xi)
 
-ggplot(gpd_df_v2, aes(x=k, y=lnL))+
+gpd_df_v2<-cbind(gpd_df_v2, Fx=Fx)
+
+
+ggplot(gpd_df_v2, aes(x=y, y=Fx))+
   geom_line()+
   labs(title="Tesla GPD distribution")
 
-ggplot(mapping = aes(sample=gpd_df_v2$lnL))+
+ggplot(mapping = aes(sample=gpd_df_v2$Fx))+
   geom_qq() + geom_qq_line(color=2)+labs(title="Normal Q-Q Plot")
+
+
 
 
 #Hill becsles (nem a házi része)
@@ -94,6 +103,8 @@ xi_Hill<-1/μ
 beta_Hill<-mean(gpd_dfH_v2$y[1:(length(gpd_dfH_v2$y)-1)])*(1-xi_Hill)
 VaR_Hill99<-u+(beta_Hill/xi_Hill)*((n/Nu*(1-q))^(-xi_Hill)-1)
 VaR_Hill95<-u+(beta_Hill/xi_Hill)*((n/Nu*(1-q1))^(-xi_Hill)-1)
+
+
 
 ggplot(gpd_dfH_v2, aes(x=k, y=lnL))+
   geom_line()+
