@@ -12,6 +12,7 @@ library(ggplot2)
 library(ggpubr)
 library(mev)
 library(stats)
+library(evir)
 
 #adat letoltes yahoo-rol, es adj close kimentese
 tesla_df <-
@@ -104,9 +105,37 @@ beta_Hill<-mean(gpd_dfH_v2$y[1:(length(gpd_dfH_v2$y)-1)])*(1-xi_Hill)
 VaR_Hill99<-u+(beta_Hill/xi_Hill)*((n/Nu*(1-q))^(-xi_Hill)-1)
 VaR_Hill95<-u+(beta_Hill/xi_Hill)*((n/Nu*(1-q1))^(-xi_Hill)-1)
 
+Fx_Hill<-1-(Nu/n)*(1+xi_Hill*(gpd_dfH_v2$y/beta_Hill))^(-1/xi_Hill)
 
-
-ggplot(gpd_dfH_v2, aes(x=k, y=lnL))+
+ggplot(gpd_dfH_v2, aes(x=k, y=Fx_Hill))+
   geom_line()+
   labs(title="Tesla GPD distribution with Hill estimation")
 
+
+
+#új az Intro to R könyv szerint
+
+summary(tesla_df$loss)
+hist(tesla_df$loss, xlim = c(0,0.2))
+sum(tesla_df$loss>0.2)/length(tesla_df$loss[tesla_df$loss>0])
+sum(tesla_df$loss[tesla_df$loss>0.2])/sum(tesla_df$loss[tesla_df$loss>0])
+emplot(tesla_df$loss)
+emplot(tesla_df$loss[tesla_df$loss>0], alog="xy")
+qplot(tesla_df$loss[tesla_df$loss>0], trim=100) #nem exponenciális eloszlást követ, fat tailed
+
+meplot(tesla_df$loss[tesla_df$loss>0], omit=10)
+meplot(tesla_df$loss[tesla_df$loss>0], omit=10, xlim=c(0,0.05)) # 3-5% között lineáris, 3% lehetne a threshold
+
+gpdfit<-gpd(tesla_df$loss[tesla_df$loss>0], threshold = 0.03)
+gpdfit$converged # ha 0 a value akkor ML használva lett
+gpdfit$par.ests #alakparaméter és skálaparaméter
+gpdfit$par.ses #sztenderd hiba
+
+plot(gpdfit)
+
+
+tp<-tailplot(gpdfit)
+gpd.q(tp, pp=0.999, ci.p =0.95)
+quantile(tesla_df$loss[tesla_df$loss>0], probs = 0.999, type =1)
+
+gpd.sfall(tp, 0.99)
